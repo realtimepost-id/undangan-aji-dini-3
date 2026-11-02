@@ -50,6 +50,7 @@ async function loadGuests() {
   drawG();
 }
 async function saveG(quiet) {
+  if (!/\[nama\]/i.test($('#tpl').value) || !/\[link\]/i.test($('#tpl').value)) { if (!confirm('Template tidak memuat [nama] dan/atau [link]. Semua tamu akan menerima nama/link yang sama. Tetap simpan?')) return; }
   localStorage.setItem('baseUrl', $('#base').value);
   let r, d; try { r = await gApi('PUT', { template: $('#tpl').value, guests }); d = await r.json(); } catch (e) { r = { ok: false }; d = { error: 'Server tidak merespons (api/guests.js belum ada?)' }; }
   $('#gInfo').textContent = r.ok ? `Tersimpan (${d.count} tamu) · ${new Date().toLocaleTimeString('id-ID')}` : '⚠️ ' + (d.error || 'Gagal menyimpan');
@@ -67,7 +68,8 @@ function sendWA(g) {
   window.open('https://wa.me/' + g.phone + '?text=' + encodeURIComponent(msgOf(g)), '_blank'); g.sent = true; drawG(); saveG();
 }
 $('#impBtn').onclick = () => {
-  const rows = $('#imp').value.split('\n').map(l => l.split(/\t|;|,/).map(x => x.trim())).filter(r => r[0]);
+  const parseLine = l => { const p = l.split(/\t|;|,/).map(x => x.trim()); if (p.length >= 2) return p; const m = l.match(/^(.*?)\s*(\+?\d[\d\s-]{7,}\d)\s*(.*)$/); return m ? [m[1].trim(), m[2], m[3].trim()] : [l.trim()]; };
+  const rows = $('#imp').value.split('\n').map(parseLine).filter(r => r[0]);
   rows.forEach(r => { const phone = norm(r[1]); if (!guests.some(g => g.name.toLowerCase() === r[0].toLowerCase() && g.phone === phone)) guests.push({ id: Math.random().toString(36).slice(2, 10), name: r[0], phone, group: r[2] || '', sent: false }); });
   $('#imp').value = ''; drawG(); saveG();
 };
