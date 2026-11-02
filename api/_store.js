@@ -26,3 +26,15 @@ exports.remove = async id => {
   if (URL_ && TOKEN) { const hit = (await redis(['LRANGE', KEY, 0, -1])).find(s => JSON.parse(s).id === id); return hit && redis(['LREM', KEY, 0, hit]); }
   fs.writeFileSync(FILE, JSON.stringify(readFile().filter(x => x.id !== id), null, 2));
 };
+
+// ---- Daftar tamu & template WA blast (satu dokumen JSON) ----
+const GFILE = path.join(process.cwd(), 'data', 'guests.json'), GKEY = 'undangan:aji-dini:guests';
+exports.getGuests = async () => {
+  if (URL_ && TOKEN) { const v = await redis(['GET', GKEY]); return v ? JSON.parse(v) : { template: '', guests: [] }; }
+  try { return JSON.parse(fs.readFileSync(GFILE, 'utf8')); } catch { return { template: '', guests: [] }; }
+};
+exports.setGuests = async doc => {
+  if (URL_ && TOKEN) return redis(['SET', GKEY, JSON.stringify(doc)]);
+  if (process.env.VERCEL) throw new Error('Database belum terhubung (lihat README bagian Vercel).');
+  fs.writeFileSync(GFILE, JSON.stringify(doc, null, 2));
+};

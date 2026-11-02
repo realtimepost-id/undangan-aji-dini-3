@@ -42,12 +42,16 @@ const rsvpOf = g => (items.find(i => i.name.trim().toLowerCase() === g.name.trim
 const gApi = (method, body) => fetch('/api/guests', { method, headers: { 'x-admin-key': key, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
 
 async function loadGuests() {
-  const r = await gApi('GET'); const d = await r.json(); if (!r.ok) return;
-  guests = d.guests || []; $('#tpl').value = d.template || DEFAULT_TPL; $('#base').value = localStorage.getItem('baseUrl') || location.origin + '/'; drawG();
+  $('#base').value = localStorage.getItem('baseUrl') || location.origin + '/'; $('#tpl').value = DEFAULT_TPL;
+  try {
+    const r = await gApi('GET'); const d = await r.json(); if (!r.ok) throw new Error((d.error || 'Gagal') + ' (kode ' + r.status + ')');
+    guests = d.guests || []; if (d.template) $('#tpl').value = d.template;
+  } catch (e) { $('#gInfo').textContent = '⚠️ Daftar tamu belum bisa dimuat: ' + e.message + ' — pastikan file api/guests.js ada di repo lalu Redeploy.'; }
+  drawG();
 }
 async function saveG(quiet) {
   localStorage.setItem('baseUrl', $('#base').value);
-  const r = await gApi('PUT', { template: $('#tpl').value, guests }); const d = await r.json();
+  let r, d; try { r = await gApi('PUT', { template: $('#tpl').value, guests }); d = await r.json(); } catch (e) { r = { ok: false }; d = { error: 'Server tidak merespons (api/guests.js belum ada?)' }; }
   $('#gInfo').textContent = r.ok ? `Tersimpan (${d.count} tamu) · ${new Date().toLocaleTimeString('id-ID')}` : '⚠️ ' + (d.error || 'Gagal menyimpan');
 }
 function drawG() {
@@ -56,7 +60,7 @@ function drawG() {
   $('#glist').innerHTML = list.map(g => `<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.phone)}${g.phone ? '' : ' <small>(kosong)</small>'}</td><td>${esc(g.group)}</td><td>${esc(rsvpOf(g)) || '<small>belum</small>'}</td>
     <td><input type="checkbox" data-s="${esc(g.id)}" ${g.sent ? 'checked' : ''} style="width:auto"></td>
     <td style="white-space:nowrap"><button data-wa="${esc(g.id)}">Kirim WA</button> <button data-cp="${esc(g.id)}">Salin link</button> <button class="del" data-rm="${esc(g.id)}">✕</button></td></tr>`).join('') || '<tr><td colspan="6">Belum ada tamu.</td></tr>';
-  const sent = guests.filter(g => g.sent).length; if (!$('#gInfo').textContent.startsWith('Tersimpan')) $('#gInfo').textContent = `${guests.length} tamu · ${sent} terkirim · ${guests.length - sent} belum`;
+  const sent = guests.filter(g => g.sent).length; if (!/^(Tersimpan|⚠️)/.test($('#gInfo').textContent)) $('#gInfo').textContent = `${guests.length} tamu · ${sent} terkirim · ${guests.length - sent} belum`;
 }
 function sendWA(g) {
   if (!g.phone) return alert('Nomor WA ' + g.name + ' kosong.');
