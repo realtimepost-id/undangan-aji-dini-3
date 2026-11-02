@@ -21,7 +21,7 @@ function draw() {
 $('#loginBtn').onclick = async () => { key = $('#pw').value.trim(); if (!key) { $('#err').textContent = 'Ketik password dulu'; return; } $('#err').textContent = ''; sessionStorage.setItem('adm', key); await load(); };
 $('#showpw').onchange = e => $('#pw').type = e.target.checked ? 'text' : 'password';
 $('#pw').onkeydown = e => { if (e.key === 'Enter') $('#loginBtn').click(); };
-$('#refresh').onclick = load; $('#q').oninput = $('#f').onchange = draw;
+   $('#pw').onkeydown = e => { if (e.key === 'Enter') $('#loginBtn').click(); };
 $('#out').onclick = () => { sessionStorage.removeItem('adm'); location.reload(); };
 $('#rows').onclick = async e => { const id = e.target.dataset.id; if (id && confirm('Hapus RSVP ini?')) { await api('?id=' + encodeURIComponent(id), { method: 'DELETE' }); load(); } };
 $('#csv').onclick = () => {
